@@ -27,6 +27,26 @@ App = {
     /*
      * Replace me...
      */
+    if (window.ethereum) {
+      App.web3Provider = window.ethereum;
+      try{
+        await window.ethereum.enable();
+      } catch (error) {
+        console.error("User denied account access")
+      }
+    }
+    else if (window.web3) {
+      App.web3Provider = window.web3.currentProvider;
+    }
+    else {
+      // App.web3Provider = new web3.providers.HttpProvider('http://localhost:7545');
+      App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+    }
+    web3 = new Web3(App.weeb3Provider);
+
+
+
+
 
     return App.initContract();
   },
@@ -35,6 +55,17 @@ App = {
     /*
      * Replace me...
      */
+    $.getJSON('Adoption.json', function(data) {
+      var AdoptionArtifact = data;
+      App.contracts.Adoption = TruffleContract(AdoptionArtifact);
+
+      App.contracts.Adoption.setProvider(App.web3Provider);
+      
+      return App.markAdopted();
+
+    });
+
+  
 
     return App.bindEvents();
   },
@@ -47,6 +78,24 @@ App = {
     /*
      * Replace me...
      */
+    var adoptionInstance;
+
+    App.contracts.Adoption.deployed().then(function(instance){
+      adoptionInstance = instance;
+
+      return adoptionInstance.getAdopters.call();
+    }).then(function(adopters){
+      for (i = 0; i < adopters.length; i++) {
+        if (adopters[i] !== '0x0000000000000000000000000000000000000000') {
+          $('.panel-pet').eq(i).find('button').text('Success').attr('disabled', true);
+        }
+      }
+    }).catch(function(err){
+      console.log(err.message);
+    });
+    
+
+
   },
 
   handleAdopt: function(event) {
@@ -57,6 +106,47 @@ App = {
     /*
      * Replace me...
      */
+
+    var adoptionInstance;
+    
+    let accounts =  web3.eth.getAccounts
+      // if (error) {
+      //   console.log(error);
+      
+
+      var account = accounts[0];
+
+      App.contracts.Adoption.deployed().then(function(instance){
+        adoptionInstance = instance;
+
+        return adoptionInstance.adopt(petId, {from: account});
+      }).then(function(result){
+        return App.markAdopted();
+      }).catch(function(err){
+        console.log(err.message);
+      });
+    ;
+    
+    // web3.eth.getAccounts(function(error, accounts) {
+    //   if (error) {
+    //     console.log(error);
+    //   }
+
+    //   var account = accounts[0];
+
+    //   App.contracts.Adoption.deployed().then(function(instance){
+    //     adoptionInstance = instance;
+
+    //     return adoptionInstance.adopt(petId, {from: account});
+    //   }).then(function(result){
+    //     return App.markAdopted();
+    //   }).catch(function(err){
+    //     console.log(err.message);
+    //   });
+    // });
+
+
+     
   }
 
 };
